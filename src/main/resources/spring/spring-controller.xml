@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:mvc="http://www.springframework.org/schema/mvc" 
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/context
+    http://www.springframework.org/schema/context/spring-context.xsd
+    http://www.springframework.org/schema/mvc
+    http://www.springframework.org/schema/mvc/spring-mvc-3.0.xsd">
+    
+    <!-- 配置Springmvc -->
+    
+    <!-- 
+		1.开启springmvc注解模式
+		简化配置：
+			（1）自动注册DefaultAnootationHandlerMapping,AnotationMethodHandlerAdapter 
+			（2）提供一些列：数据绑定，数字和日期的format @NumberFormat, @DateTimeFormat, xml,json默认读写支持 
+     -->
+	<mvc:annotation-driven/>
+     
+     <!-- 
+     	2.静态资源默认servlet配置
+     	(1)加入对静态资源的处理：js,gif,png
+        (2)允许使用"/"做整体映射
+      -->
+	<mvc:default-servlet-handler/>
+      
+      <!-- 3.配置jsp显示的ViewResolve（因为我们使用了beetl引擎模板，所以这里我们注释掉springmvc的视图解析器，使用beetl的视图解析器） -->
+      <!-- <bean class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+        <property name="viewClass" value="org.springframework.web.servlet.view.JstlView" />
+        <property name="prefix" value="/WEB-INF/jsp/" />
+        <property name="suffix" value=".jsp" />
+     </bean> -->
+     
+     <!-- 配置beetl（官网：http://www.ibeetl.com/guide/） -->
+	<bean name="beetlConfig" class="org.beetl.ext.spring.BeetlGroupUtilConfiguration" init-method="init">
+		<!-- 加载beetl的配置文件 -->
+		<property name="configFileResource" value="classpath:beetl.properties"/>
+	</bean>
+	
+	<!-- 
+		Beetl视图解析器(可根据不同场景配置多个视图解析器) 
+		http://localhost:8081/iyunr-pro-ssm/book/list
+	-->
+	<bean name="beetlViewResolver" class="org.beetl.ext.spring.BeetlSpringViewResolver">
+        <!-- 如果是多视图解析器，需要设置viewNames和order viewNames这个用于判断controller返回的path到底应该交给哪个视图解析器来做，以/template开头的是beetlViewResolver来渲染。
+        	这里只有一个视图解析器，所以注viewNames可配可不配，为了分层清晰，我在这里还是配置上了。
+        -->
+        <property name="viewNames">
+            <list>
+                 <value>/views/**</value>
+            </list>
+        </property>
+        <property name="suffix" value=".html"/><!-- 因为使用的是模板引擎，所以规范的后缀名应该是：btl，因为我们使用html比较熟悉，所以这里暂时用html为后缀 -->
+        <property name="contentType" value="text/html;charset=UTF-8"/>
+        <property name="order" value="0"/>
+        <!-- 多GroupTemplate，需要指定使用的bean -->
+        <property name="config" ref="beetlConfig"/>
+	</bean>
+	
+	<!-- JSP视图解析器（如果上面配置的beetl的视图解析器没有匹配得上，则使用这个视图解析器。
+		该jsp的视图解析器主要的应用场景是：旧系统可能页面都是jsp的，我们不能大规模进行修改，对于新开发的我们可以使用上面的视图解析器，而老的则会使用jsp视图解析器） 
+		http://localhost:8081/iyunr-pro-ssm/book/list2
+	-->
+	<bean name="JSPViewResolver" class="org.springframework.web.servlet.view.InternalResourceViewResolver">
+		<!-- 注意JSP的这个视图解析器order必须在最后 -->
+        <property name="order" value="256"/>
+		<!-- beetl配置不支持前缀，这不同于jsp 和 freemaker -->
+        <property name="prefix" value="/WEB-INF/jsp/"/>
+        <property name="suffix" value=".jsp"/>
+        <property name="contentType" value="text/html;charset=UTF-8"/>
+	</bean>
+     
+     <!-- 4.扫描web（controller）相关的bean -->
+	<context:component-scan base-package="com.iyunr.pro.controller"></context:component-scan>
+</beans>
